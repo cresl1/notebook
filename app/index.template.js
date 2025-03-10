@@ -49,35 +49,32 @@ async function createModule(scope, module) {
  */
 async function main() {
   const mimeExtensionsMods = [
-  {{#each notebook_mime_extensions}}
-    require('{{ @key }}'),
-  {{/each}}
+    {{#each notebook_mime_extensions}}
+    import('{{ @key }}'),
+    {{/each}}
   ];
   const mimeExtensions = await Promise.all(mimeExtensionsMods);
 
   // Load the base plugins available on all pages
-  let baseMods = [
-  {{#each notebook_plugins}}
+  const baseMods = [
+    {{#each notebook_plugins}}
     {{#if (ispage @key '/')}}
-      {{{ list_plugins }}}
+    {{{ list_plugins }}}
     {{/if}}
-  {{/each}}
+    {{/each}}
   ];
 
   const page = `/${PageConfig.getOption('notebookPage')}`;
-  switch (page) {
-  {{#each notebook_plugins}}
+  const pageMods = [
+    {{#each notebook_plugins}}
     {{#unless (ispage @key '/')}}
-    // list all the other plugins grouped by page
     case '{{ @key }}': {
-      baseMods = baseMods.concat([
-        {{{ list_plugins }}}
-      ]);
+      baseMods.push({{{ list_plugins }}});
       break;
     }
     {{/unless}}
-  {{/each}}
-  }
+    {{/each}}
+  ];
 
   // populate the list of disabled extensions
   const disabled = [];
@@ -124,7 +121,6 @@ async function main() {
     PageConfig.getOption('federated_extensions')
   );
 
-  const mods = [];
   const federatedExtensionPromises = [];
   const federatedMimeExtensionPromises = [];
   const federatedStylePromises = [];
@@ -166,17 +162,17 @@ async function main() {
 
   // Add the base frontend extensions
   const baseFrontendMods = await Promise.all(baseMods);
-  baseFrontendMods.forEach(p => {
+  for (const p of baseFrontendMods) {
     for (let plugin of activePlugins(p)) {
       mods.push(plugin);
     }
-  });
+  }
 
   // Add the federated extensions.
   const federatedExtensions = await Promise.allSettled(
     federatedExtensionPromises
   );
-  federatedExtensions.forEach(p => {
+  for (const p of federatedExtensions) {
     if (p.status === 'fulfilled') {
       for (let plugin of activePlugins(p.value)) {
         mods.push(plugin);
@@ -184,13 +180,13 @@ async function main() {
     } else {
       console.error(p.reason);
     }
-  });
+  }
 
   // Add the federated mime extensions.
   const federatedMimeExtensions = await Promise.allSettled(
     federatedMimeExtensionPromises
   );
-  federatedMimeExtensions.forEach(p => {
+  for (const p of federatedMimeExtensions) {
     if (p.status === 'fulfilled') {
       for (let plugin of activePlugins(p.value)) {
         mimeExtensions.push(plugin);
@@ -198,7 +194,7 @@ async function main() {
     } else {
       console.error(p.reason);
     }
-  });
+  }
 
   // Load all federated component styles and log errors for any that do not
   (await Promise.allSettled(federatedStylePromises))
