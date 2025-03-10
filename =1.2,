@@ -1,0 +1,4 @@
+Collecting maturin
+  Using cached maturin-1.8.2-py3-none-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl (15.1 MB)
+Installing collected packages: maturin
+Successfully installed maturin-1.8.2
